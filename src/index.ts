@@ -66,7 +66,7 @@ export const uploadFile = functions.https.onRequest((request, response) => {
     return;
   }
   if (!request.header("Authorization")) {
-    response.status(422);
+    response.status(401);
     response.send();
     return;
   }
