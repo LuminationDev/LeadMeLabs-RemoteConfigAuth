@@ -4,6 +4,7 @@ import {credential} from "firebase-admin";
 import {getStorage} from "firebase-admin/storage";
 import applicationDefault = credential.applicationDefault;
 import * as fs from "fs";
+import axios from "axios";
 
 export const getCustomToken = functions.https.onRequest((request, response) => {
   if (request.method !== "POST") {
@@ -31,7 +32,7 @@ export const getCustomToken = functions.https.onRequest((request, response) => {
       response.send();
       return;
     }
-    admin.auth().getUser(uid).then((user) => {
+    admin.auth().getUser(uid).then(() => {
       response.status(409);
       response.send("UID is already in use");
       return;
@@ -105,4 +106,51 @@ export const uploadFile = functions.https.onRequest((request, response) => {
       response.send();
       return;
     });
+});
+
+export const submitTicket = functions.https.onRequest((request, response) => {
+  if (request.method !== "POST") {
+    response.status(405);
+    response.send();
+    return;
+  }
+  if (!JSON.parse(request.body).subject ||
+      !JSON.parse(request.body).email ||
+      !JSON.parse(request.body).content) {
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (admin.apps.length < 1) {
+    admin.initializeApp({
+      credential: applicationDefault(),
+    });
+  }
+
+  response.header("Access-Control-Allow-Origin", "*");
+
+  axios.post("https://api.hubapi.com/crm/v3/objects/tickets", {
+    "properties": {
+      "hs_pipeline": 0,
+      "hs_pipeline_stage": 1,
+      "hs_ticket_priority": "MEDIUM",
+      "subject": JSON.parse(request.body).subject,
+      "content": `Ticket from ${JSON.parse(request.body).email}\n
+      ${JSON.parse(request.body).content}`,
+    },
+  }, {
+    headers: {
+      Authorization: `Bearer ${process.env.HUBSPOT_TOKEN}`,
+    },
+  }).then(() => {
+    response.status(201);
+    response.send();
+    return;
+  }).catch((error) => {
+    console.log(error);
+    response.status(400);
+    response.send();
+    return;
+  });
 });
