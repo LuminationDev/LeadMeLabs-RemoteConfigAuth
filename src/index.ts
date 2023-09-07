@@ -136,8 +136,7 @@ export const submitTicket = functions.https.onRequest((request, response) => {
       "hs_pipeline_stage": 1,
       "hs_ticket_priority": "MEDIUM",
       "subject": request.body.subject,
-      "content": `Ticket from ${request.body.email}\n
-      ${request.body.content}`,
+      "content": `Ticket from ${request.body.email}\n${request.body.content}`,
     },
   }, {
     headers: {
