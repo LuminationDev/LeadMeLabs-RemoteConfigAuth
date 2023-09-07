@@ -114,9 +114,9 @@ export const submitTicket = functions.https.onRequest((request, response) => {
     response.send();
     return;
   }
-  if (!JSON.parse(request.body).subject ||
-      !JSON.parse(request.body).email ||
-      !JSON.parse(request.body).content) {
+  if (!request.body.subject ||
+      !request.body.email ||
+      !request.body.content) {
     response.status(422);
     response.send();
     return;
@@ -135,9 +135,8 @@ export const submitTicket = functions.https.onRequest((request, response) => {
       "hs_pipeline": 0,
       "hs_pipeline_stage": 1,
       "hs_ticket_priority": "MEDIUM",
-      "subject": JSON.parse(request.body).subject,
-      "content": `Ticket from ${JSON.parse(request.body).email}\n
-      ${JSON.parse(request.body).content}`,
+      "subject": request.body.subject,
+      "content": `Ticket from ${request.body.email}\n${request.body.content}`,
     },
   }, {
     headers: {
