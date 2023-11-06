@@ -108,6 +108,17 @@ export const uploadFile = functions.https.onRequest((request, response) => {
     });
 });
 
+export const status = functions.https.onRequest((request, response) => {
+  if (request.method !== "GET") {
+    response.status(405);
+    response.send();
+    return;
+  }
+  response.status(204);
+  response.send();
+  return;
+});
+
 export const submitTicket = functions.https.onRequest((request, response) => {
   if (request.method !== "POST") {
     response.status(405);
