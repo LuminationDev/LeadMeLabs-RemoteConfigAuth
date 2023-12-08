@@ -108,6 +108,61 @@ export const uploadFile = functions.https.onRequest((request, response) => {
     });
 });
 
+// eslint-disable-next-line max-len
+export const uploadNetworkCheckerReport = functions.https.onRequest((request, response) => {
+  if (request.method !== "POST") {
+    response.status(405);
+    response.send();
+    return;
+  }
+  if (!request.header("Content-Type") ||
+      request.header("Content-Type") !== "application/pdf") {
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (!request.header("SiteName")) {
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (!request.header("Email") ||
+  !validateEmail(request.header("Email") ?? "")) {
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  response.header("Access-Control-Allow-Origin", "*");
+
+  if (admin.apps.length < 1) {
+    admin.initializeApp({
+      credential: applicationDefault(),
+    });
+  }
+
+  const sitename = request.header("SiteName")
+    ?.replace(/\s/g, "")
+    .replace(/\W/g, "");
+
+  fs.writeFileSync("temp.pdf", request.rawBody);
+  getStorage().bucket("leadme-labs.appspot.com").upload("temp.pdf", {
+    destination:
+    `networkReports/${sitename}-${Date.now().toString()}.pdf`,
+    metadata: {
+      customMetadata: {
+        "email": request.header("Email"),
+      },
+    },
+  }).then(() => {
+    response.status(200);
+    response.send();
+    return;
+  });
+});
+
 export const status = functions.https.onRequest((request, response) => {
   if (request.method !== "GET") {
     response.status(405);
@@ -164,3 +219,12 @@ export const submitTicket = functions.https.onRequest((request, response) => {
     return;
   });
 });
+
+const validateEmail = (email: string) => {
+  return String(email)
+    .toLowerCase()
+    .match(
+      // eslint-disable-next-line max-len
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    );
+};
