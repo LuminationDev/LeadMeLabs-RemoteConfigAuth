@@ -147,8 +147,8 @@ export const uploadNetworkCheckerReport = functions.https.onRequest((request, re
     ?.replace(/\s/g, "")
     .replace(/\W/g, "");
 
-  fs.writeFileSync("temp.pdf", request.rawBody);
-  getStorage().bucket("leadme-labs.appspot.com").upload("temp.pdf", {
+  fs.writeFileSync("/tmp/temp.pdf", request.rawBody);
+  getStorage().bucket("leadme-labs.appspot.com").upload("/tmp/temp.pdf", {
     destination:
     `networkReports/${sitename}-${Date.now().toString()}.pdf`,
     metadata: {
