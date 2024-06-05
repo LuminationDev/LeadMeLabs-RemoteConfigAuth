@@ -108,6 +108,68 @@ export const uploadFile = functions.https.onRequest((request, response) => {
     });
 });
 
+/**
+ * Used by the launcher to upload log files shortly after NUC/Station startup
+ */
+// eslint-disable-next-line max-len
+export const anonymousLogUpload = functions.https.onRequest((request, response) => {
+  if (request.method !== "POST") {
+    response.status(405);
+    response.send();
+    return;
+  }
+  if (!request.header("Content-Type") ||
+      request.header("Content-Type") !== "text/plain") {
+    console.log("rejected at: Content-Type");
+    response.status(422);
+    response.send();
+    return;
+  }
+  if (!request.header("site") ||
+      // eslint-disable-next-line max-len
+      !request.header("site")?.match("^[\\s\\da-zA-Z-_']*$")) { // only letters, numbers, single quotes, dashes and underscores
+    console.log("rejected at: site");
+    response.status(422);
+    response.send();
+    return;
+  }
+  if (!request.header("device") ||
+      // eslint-disable-next-line max-len
+      !request.header("device")?.match("^(NUC|Station)[\\d]{0,3}$")) { // NUC or Station123
+    console.log("rejected at: device");
+    response.status(422);
+    response.send();
+    return;
+  }
+  if (!request.header("fileName") ||
+      // eslint-disable-next-line max-len
+      !request.header("fileName")?.match("^20\\d\\d_\\d\\d_\\d\\d_log$")) { // match date stamp_log, todo - fix in the year 3000
+    console.log("rejected at: fileName");
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (admin.apps.length < 1) {
+    admin.initializeApp({
+      credential: applicationDefault(),
+    });
+  }
+
+  response.header("Access-Control-Allow-Origin", "*");
+
+  fs.writeFileSync("temp.txt", request.rawBody);
+  getStorage().bucket("leadme-labs.appspot.com").upload("temp.txt", {
+    destination:
+    // eslint-disable-next-line max-len
+        `unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`,
+  }).then(() => {
+    response.status(200);
+    response.send();
+    return;
+  });
+});
+
 // eslint-disable-next-line max-len
 export const uploadNetworkCheckerReport = functions.https.onRequest((request, response) => {
   if (request.method !== "POST") {
