@@ -158,8 +158,8 @@ export const anonymousLogUpload = functions.https.onRequest((request, response) 
 
   response.header("Access-Control-Allow-Origin", "*");
 
-  fs.writeFileSync("temp.txt", request.rawBody);
-  getStorage().bucket("leadme-labs.appspot.com").upload("temp.txt", {
+  fs.writeFileSync("/tmp/temp.txt", request.rawBody);
+  getStorage().bucket("leadme-labs.appspot.com").upload("/tmp/temp.txt", {
     destination:
     // eslint-disable-next-line max-len
         `unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`,
