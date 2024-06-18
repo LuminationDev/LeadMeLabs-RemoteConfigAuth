@@ -150,6 +150,24 @@ export const anonymousLogUpload = functions.https.onRequest((request, response) 
     return;
   }
 
+  // validate that it is only today's file (we'll allow +/- one day for timezones)
+  const currDay = new Date();
+  const prevDay = new Date();
+  prevDay.setDate(currDay.getDate() - 1);
+  const nextDay = new Date();
+  nextDay.setDate(currDay.getDate() + 1);
+  const acceptableFileNames = [
+    `${prevDay.getFullYear()}_${((prevDay.getMonth() + 1) + "").padStart(2, "0")}_${((prevDay.getDate()) + "").padStart(2, "0")}_log`,
+    `${currDay.getFullYear()}_${((currDay.getMonth() + 1) + "").padStart(2, "0")}_${((currDay.getDate()) + "").padStart(2, "0")}_log`,
+    `${nextDay.getFullYear()}_${((nextDay.getMonth() + 1) + "").padStart(2, "0")}_${((nextDay.getDate()) + "").padStart(2, "0")}_log`,
+  ];
+  if (!acceptableFileNames.includes(<string>request.header("fileName"))) {
+    console.log("rejected at: fileName days");
+    response.status(422);
+    response.send();
+    return;
+  }
+
   if (admin.apps.length < 1) {
     admin.initializeApp({
       credential: applicationDefault(),
@@ -159,15 +177,46 @@ export const anonymousLogUpload = functions.https.onRequest((request, response) 
   response.header("Access-Control-Allow-Origin", "*");
 
   fs.writeFileSync("/tmp/temp.txt", request.rawBody);
-  getStorage().bucket("leadme-labs.appspot.com").upload("/tmp/temp.txt", {
-    destination:
-    // eslint-disable-next-line max-len
-        `unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`,
-  }).then(() => {
-    response.status(200);
-    response.send();
-    return;
-  });
+  const bucket = getStorage().bucket("leadme-labs.appspot.com");
+  bucket
+  // eslint-disable-next-line max-len
+    .file(`unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`)
+    .getMetadata()
+    .then((metadata) => {
+      const uploadedTime = new Date(metadata[0].updated + "");
+      uploadedTime.setHours(uploadedTime.getHours() + 2);
+      if (uploadedTime < new Date()) {
+        bucket.upload("/tmp/temp.txt", {
+          destination:
+          // eslint-disable-next-line max-len
+              `unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`,
+        }).then(() => {
+          response.status(200);
+          response.send();
+          return;
+        });
+      } else {
+        response.status(200);
+        response.send();
+        return;
+      }
+    }).catch((e) => {
+      if (e.code === 404) {
+        bucket.upload("/tmp/temp.txt", {
+          destination:
+          // eslint-disable-next-line max-len
+              `unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`,
+        }).then(() => {
+          response.status(200);
+          response.send();
+          return;
+        });
+      } else {
+        response.status(400);
+        response.send();
+        return;
+      }
+    });
 });
 
 // eslint-disable-next-line max-len
