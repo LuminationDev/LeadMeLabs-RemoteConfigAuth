@@ -3,14 +3,80 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import {credential} from "firebase-admin";
 import {getStorage} from "firebase-admin/storage";
-import applicationDefault = credential.applicationDefault;
 import * as fs from "fs";
 import axios from "axios";
 import * as Sentry from "@sentry/google-cloud-serverless";
+import applicationDefault = credential.applicationDefault;
 
 Sentry.init({
   dsn: "https://33575138280beb62232f4c7111bd21a7@o1294571.ingest.us.sentry.io/4507485158834176",
 });
+
+const siteNameList: string[] = [
+  "ABHS",
+  "ABHS_Station_1",
+  "ABHS_Station_2",
+  "ABHS_Station_3",
+  "Adelaide High School",
+  "AldingaPayinthi",
+  "Ardrossan",
+  "Australian Christian College",
+  "Australian Science and Mathematics School",
+  "AustralianChristianCollege",
+  "Canary Test Lab",
+  "Catholic Ladies",
+  "Catholic Ladies College Eltham",
+  "Ceduna",
+  "Ceduna Area School",
+  "Chevalier College",
+  "Darragh's Computer",
+  "Dorchester",
+  "Dorchester School",
+  "Ed's  Computer",
+  "Ed's Computer",
+  "Emmaus College",
+  "Endeavour College",
+  "Girton Grammar School",
+  "Goolwa Secondary College",
+  "Grange School",
+  "GrangeNuc",
+  "Grange_High_School_South_Australia",
+  "Holroyd",
+  "Holroyd High School",
+  "Kidman Park Primary School",
+  "Loreto College",
+  "Lumination Melbourne Office",
+  "Lyndale",
+  "Lyndale Secondary College",
+  "Morialta Secondary College",
+  "Morialta Seconday College",
+  "Norwood",
+  "Oz Minerals",
+  "Paralowie R-12 School",
+  "Peterborough High School",
+  "Port Lincoln High School",
+  "Production Lab",
+  "Snowy Hydro",
+  "Snowy Hydro Immersive Theater",
+  "Snowy Hydro Immersive Theatre",
+  "St Francis",
+  "StJosephsCollege",
+  "Sydney",
+  "Testing",
+  "Thebarton",
+  "Thebarton - Warehouse",
+  "Thebarton Test Lab",
+  "Thebarton Warehouse",
+  "Therbarton Warehouse",
+  "Underdale",
+  "Unknown",
+  "Whyalla Secondary College",
+  "Willunga High School",
+  "acc",
+  "aldinga",
+  "lyndale secondary college",
+  "norwood",
+];
 
 export const getCustomToken = Sentry.wrapHttpFunction(functions.https.onRequest((request, response) => {
   if (request.method !== "POST") {
@@ -97,8 +163,8 @@ export const uploadFile = Sentry.wrapHttpFunction(functions.https.onRequest((req
     .verifyIdToken(request.header("Authorization")
       .replace("Bearer ", ""))
     .then((result) => {
-      fs.writeFileSync("temp.txt", request.rawBody);
-      getStorage().bucket("leadme-labs.appspot.com").upload("temp.txt", {
+      fs.writeFileSync("/tmp/temp.txt", request.rawBody);
+      getStorage().bucket("leadme-labs.appspot.com").upload("/tmp/temp.txt", {
         destination:
             `autoLogFiles/${result.uid}/log${Date.now().toString()}.txt`,
       }).then(() => {
@@ -138,72 +204,6 @@ export const anonymousLogUpload = Sentry.wrapHttpFunction(functions.https.onRequ
     response.send();
     return;
   }
-
-  const siteNameList: string[] = [
-    "ABHS",
-    "ABHS_Station_1",
-    "ABHS_Station_2",
-    "ABHS_Station_3",
-    "Adelaide High School",
-    "AldingaPayinthi",
-    "Ardrossan",
-    "Australian Christian College",
-    "Australian Science and Mathematics School",
-    "AustralianChristianCollege",
-    "Canary Test Lab",
-    "Catholic Ladies",
-    "Catholic Ladies College Eltham",
-    "Ceduna",
-    "Ceduna Area School",
-    "Chevalier College",
-    "Darragh's Computer",
-    "Dorchester",
-    "Dorchester School",
-    "Ed's  Computer",
-    "Ed's Computer",
-    "Emmaus College",
-    "Endeavour College",
-    "Girton Grammar School",
-    "Goolwa Secondary College",
-    "Grange School",
-    "GrangeNuc",
-    "Grange_High_School_South_Australia",
-    "Holroyd",
-    "Holroyd High School",
-    "Kidman Park Primary School",
-    "Loreto College",
-    "Lumination Melbourne Office",
-    "Lyndale",
-    "Lyndale Secondary College",
-    "Morialta Secondary College",
-    "Morialta Seconday College",
-    "Norwood",
-    "Oz Minerals",
-    "Paralowie R-12 School",
-    "Peterborough High School",
-    "Port Lincoln High School",
-    "Production Lab",
-    "Snowy Hydro",
-    "Snowy Hydro Immersive Theater",
-    "Snowy Hydro Immersive Theatre",
-    "St Francis",
-    "StJosephsCollege",
-    "Sydney",
-    "Testing",
-    "Thebarton",
-    "Thebarton - Warehouse",
-    "Thebarton Test Lab",
-    "Thebarton Warehouse",
-    "Therbarton Warehouse",
-    "Underdale",
-    "Unknown",
-    "Whyalla Secondary College",
-    "Willunga High School",
-    "acc",
-    "aldinga",
-    "lyndale secondary college",
-    "norwood",
-  ];
 
   if (!siteNameList.includes(site)) {
     Sentry.captureMessage("Unlisted site log file for site: " + site);
@@ -253,7 +253,7 @@ export const anonymousLogUpload = Sentry.wrapHttpFunction(functions.https.onRequ
 
   response.header("Access-Control-Allow-Origin", "*");
 
-  fs.writeFileSync("temp.txt", request.rawBody);
+  fs.writeFileSync("/tmp/temp.txt", request.rawBody);
   const bucket = getStorage().bucket("leadme-labs.appspot.com");
   bucket
     .file(`unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`)
@@ -265,7 +265,7 @@ export const anonymousLogUpload = Sentry.wrapHttpFunction(functions.https.onRequ
       return;
     }).catch((e) => {
       if (e.code === 404) {
-        bucket.upload("temp.txt", {
+        bucket.upload("/tmp/temp.txt", {
           destination:
               `unauthenticatedLogFiles/${request.header("site")}/${request.header("device")}/${request.header("fileName")}.txt`,
         }).then(() => {
@@ -279,6 +279,136 @@ export const anonymousLogUpload = Sentry.wrapHttpFunction(functions.https.onRequ
         return;
       }
     });
+}));
+
+export const checkForCachedImages = Sentry.wrapHttpFunction(functions.https.onRequest((request, response) => {
+  if (request.method !== "POST") {
+    response.status(405);
+    response.send();
+    return;
+  }
+  if (!request.header("Content-Type") ||
+      !request.header("Content-Type")?.includes("application/json")) {
+    console.log("rejected at: Content-Type");
+    response.status(422);
+    response.send();
+    return;
+  }
+  const site: string = request.header("site") ?? "";
+  if (site === "" ||
+      !request.header("site")?.match("^[\\s\\da-zA-Z-_']*$")) { // only letters, numbers, single quotes, dashes and underscores
+    console.log("rejected at: site");
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (!siteNameList.includes(site)) {
+    Sentry.captureMessage("Unlisted site image check for site: " + site);
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (!request.header("device") ||
+      !request.header("device")?.match("^(NUC|Station)[\\d]{0,3}$")) { // NUC or Station123
+    console.log("rejected at: device");
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (admin.apps.length < 1) {
+    admin.initializeApp({
+      credential: applicationDefault(),
+    });
+  }
+
+  response.header("Access-Control-Allow-Origin", "*");
+
+  const bucket = getStorage().bucket("leadme-labs.appspot.com");
+  bucket.getFiles({
+    prefix: "applicationImages",
+  }).then((result) => {
+    console.log(result);
+
+    const names = result[0].map((element) => {
+      return element.name.replace("applicationImages/", "");
+    });
+    const missingImages = request.body.names.filter((el: string) => !names.includes(el));
+
+    console.log(missingImages);
+
+    response.status(200);
+    response.send(missingImages);
+  });
+}));
+
+export const uploadApplicationImage = Sentry.wrapHttpFunction(functions.https.onRequest((request, response) => {
+  if (request.method !== "POST") {
+    response.status(405);
+    response.send();
+    return;
+  }
+  if (!request.header("Content-Type") ||
+      !request.header("Content-Type")?.includes("image/jpeg")) {
+    console.log("rejected at: Content-Type");
+    console.log(request.header("Content-Type"));
+    response.status(422);
+    response.send();
+    return;
+  }
+  const site: string = request.header("site") ?? "";
+  if (site === "" ||
+      !request.header("site")?.match("^[\\s\\da-zA-Z-_']*$")) { // only letters, numbers, single quotes, dashes and underscores
+    console.log("rejected at: site");
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (!siteNameList.includes(site)) {
+    Sentry.captureMessage("Unlisted site image upload for site: " + site);
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (!request.header("device") ||
+      !request.header("device")?.match("^(NUC|Station)[\\d]{0,3}$")) { // NUC or Station123
+    console.log("rejected at: device");
+    response.status(422);
+    response.send();
+    return;
+  }
+  if (!request.header("filename")) {
+    console.log("rejected at: filename");
+    console.log(request.header("filename"));
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  if (admin.apps.length < 1) {
+    admin.initializeApp({
+      credential: applicationDefault(),
+    });
+  }
+
+  response.header("Access-Control-Allow-Origin", "*");
+
+  const fileName = "/tmp/" + request.header("filename");
+  fs.writeFileSync(fileName, request.rawBody);
+
+  const bucket = getStorage().bucket("leadme-labs.appspot.com");
+  bucket.upload(fileName, {
+    destination:
+        `applicationImages/${request.header("filename")}`,
+  }).then(() => {
+    response.status(200);
+    response.send();
+    return;
+  });
 }));
 
 export const uploadNetworkCheckerReport = Sentry.wrapHttpFunction(functions.https.onRequest((request, response) => {
