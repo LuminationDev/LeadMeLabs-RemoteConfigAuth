@@ -180,6 +180,62 @@ export const uploadFile = Sentry.wrapHttpFunction(functions.https.onRequest((req
     });
 }));
 
+export const simpleQaUpload = Sentry.wrapHttpFunction(functions.https.onRequest((request, response) => {
+  response.header("Access-Control-Allow-Origin", "*");
+  response.header("Access-Control-Allow-Headers", "Access-Control-Allow-Origin, Content-Type, SiteName");
+
+  if (request.method === "OPTIONS") {
+    response.status(200);
+    response.send();
+    return;
+  }
+  if (request.method !== "POST") {
+    response.status(405);
+    response.send();
+    return;
+  }
+  if (!request.header("Content-Type") ||
+      request.header("Content-Type") !== "text/plain") {
+    console.log("rejected at: Content-Type");
+    response.status(422);
+    response.send();
+    return;
+  }
+  const site: string = request.header("SiteName") ?? "";
+  if (site === "") { // only letters, numbers, single quotes, dashes and underscores
+    console.log("rejected at: site");
+    response.status(422);
+    response.send();
+    return;
+  }
+
+  const currDay = new Date();
+  const fileName = `${currDay.getFullYear()}_${((currDay.getMonth() + 1) + "").padStart(2, "0")}_${((currDay.getDate()) + "").padStart(2, "0")}_qa`;
+
+
+  if (admin.apps.length < 1) {
+    admin.initializeApp({
+      credential: applicationDefault(),
+    });
+  }
+
+  fs.writeFileSync("/tmp/temp.json", request.rawBody);
+  const bucket = getStorage().bucket("leadme-labs.appspot.com");
+
+  bucket.upload("/tmp/temp.json", {
+    destination:
+        `simpleQa/${site}/${fileName}.json`,
+  }).then(() => {
+    response.status(200);
+    response.send();
+    return;
+  }).catch((e) => {
+    response.status(400);
+    response.send();
+    return;
+  });
+}));
+
 /**
  * Used by the launcher to upload log files shortly after NUC/Station startup
  */
