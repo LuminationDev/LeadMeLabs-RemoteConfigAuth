@@ -15,7 +15,7 @@
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@sentry/google-cloud-serverless": "^8.11.0",
+    "@sentry/google-cloud-serverless": "^8.49.0",
     "axios": "^1.6.4",
     "dotenv": "^16.3.1",
     "firebase-admin": "^12.1.1",
